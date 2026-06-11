@@ -1,0 +1,21 @@
+{
+  "projectName": "Eventoando API",
+  "description": "REST API for Eventoando — Brazil's marketplace for event organizers and service providers. BFF architecture on NestJS, MySQL backend.",
+  "language": "pt-BR",
+  "version": "1.0.0",
+  "baseUrl": "https://www.eventoando.com.br/api/v1",
+  "docsDir": "docs",
+  "schemaFile": "schema/openapi.yaml",
+  "skillFile": "SKILL.md",
+  "tags": ["marketplace", "events", "brazil", "nestjs", "rest-api", "escrow", "mercadopago"],
+  "primaryEntities": ["Event", "Advertisement", "Budget", "Negotiation", "Payment", "Region", "Category", "Profile"],
+  "authType": "Bearer JWT",
+  "guides": [
+    { "file": "docs/getting-started.md", "title": "Getting Started" },
+    { "file": "docs/authentication.md", "title": "Authentication" },
+    { "file": "docs/guides/organizer-flow.md", "title": "Organizer Flow" },
+    { "file": "docs/guides/advertiser-flow.md", "title": "Advertiser Flow" },
+    { "file": "docs/guides/payment-flow.md", "title": "Payment & Escrow" },
+    { "file": "docs/guides/regions-zones.md", "title": "Regions & Zones" }
+  ]
+}

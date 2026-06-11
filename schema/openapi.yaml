@@ -1,0 +1,1216 @@
+openapi: 3.0.3
+info:
+  title: Eventoando API
+  description: |
+    REST API for Eventoando — Brazil's marketplace connecting event organizers
+    with service providers (photographers, buffets, DJs, decorators, and more).
+
+    **Base URL:** `https://www.eventoando.com.br/api/v1`
+
+    **Auth:** All protected endpoints require `Authorization: Bearer <accessToken>`.
+    Obtain tokens via `POST /bff/auth/login` or `POST /bff/auth/register`.
+  version: 1.0.0
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  contact:
+    name: Eventoando API
+    url: https://github.com/eventingon/eventoando-docs
+
+servers:
+  - url: https://www.eventoando.com.br/api/v1
+    description: Production
+
+tags:
+  - name: Auth
+    description: Authentication and user management
+  - name: Events
+    description: Event creation and management (organizer side)
+  - name: Advertisements
+    description: Service listings (provider side)
+  - name: Catalog
+    description: Advertisement catalog items and pricing
+  - name: Budgets
+    description: Budget requests from organizers to providers
+  - name: Negotiations
+    description: Active deals and negotiation flow
+  - name: Payments
+    description: Payments, escrow, and payouts
+  - name: Ratings
+    description: Post-event provider reviews
+  - name: Notifications
+    description: User notifications
+  - name: Media
+    description: File uploads
+  - name: Discovery
+    description: Geolocation and provider matching
+  - name: Reference
+    description: Categories, regions, event types
+  - name: Public
+    description: Unauthenticated public endpoints
+  - name: Health
+    description: Service health checks
+
+security:
+  - bearerAuth: []
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    Error:
+      type: object
+      properties:
+        statusCode:
+          type: integer
+          example: 404
+        message:
+          type: string
+          example: "Event not found"
+        timestamp:
+          type: string
+          format: date-time
+        path:
+          type: string
+
+    Envelope:
+      type: object
+      properties:
+        data:
+          type: object
+        total:
+          type: integer
+        metadata:
+          type: object
+          properties:
+            page:
+              type: integer
+            limit:
+              type: integer
+
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+          example: "joao@example.com"
+        password:
+          type: string
+          minLength: 6
+          example: "secret123"
+
+    RegisterRequest:
+      type: object
+      required: [name, email, password, termsAccepted]
+      properties:
+        name:
+          type: string
+          minLength: 2
+          example: "João Silva"
+        email:
+          type: string
+          format: email
+          example: "joao@example.com"
+        password:
+          type: string
+          minLength: 6
+          example: "secret123"
+        termsAccepted:
+          type: boolean
+          example: true
+        phoneNumber:
+          type: string
+          example: "5511999999999"
+        referralCode:
+          type: string
+          example: "REF1A2B3C"
+
+    AuthResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            accessToken:
+              type: string
+            refreshToken:
+              type: string
+            user:
+              $ref: '#/components/schemas/User'
+
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        email:
+          type: string
+        role:
+          type: string
+          enum: [USER, ADMIN]
+        createdAt:
+          type: string
+          format: date-time
+
+    CreateEventRequest:
+      type: object
+      required: [title, description, eventType, eventDate]
+      properties:
+        title:
+          type: string
+          example: "Casamento João e Maria"
+        description:
+          type: string
+          example: "Recepção com 150 convidados"
+        eventType:
+          type: string
+          enum: [private, public]
+          example: "private"
+        eventDate:
+          type: string
+          format: date-time
+          example: "2026-12-20T18:00:00.000Z"
+        startDate:
+          type: string
+          format: date-time
+        endDate:
+          type: string
+          format: date-time
+        guestCount:
+          type: integer
+          minimum: 0
+          example: 150
+
+    Event:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        description:
+          type: string
+        eventType:
+          type: string
+          enum: [private, public]
+        status:
+          type: string
+          enum: [draft, published, cancelled, completed]
+        eventDate:
+          type: string
+          format: date-time
+        guestCount:
+          type: integer
+        organizerId:
+          type: string
+          format: uuid
+        createdAt:
+          type: string
+          format: date-time
+
+    CatalogItem:
+      type: object
+      required: [name, price]
+      properties:
+        name:
+          type: string
+          example: "Pacote Básico"
+        description:
+          type: string
+        price:
+          type: number
+          example: 2500.00
+        unit:
+          type: string
+          example: "event"
+
+    CreateAdvertisementRequest:
+      type: object
+      required: [title, description, regionIds, items, paymentMethods]
+      properties:
+        title:
+          type: string
+          example: "Fotógrafo Profissional para Casamentos"
+        description:
+          type: string
+        categoryId:
+          type: string
+          format: uuid
+        categoryIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+        regionIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/CatalogItem'
+        paymentMethods:
+          type: array
+          items:
+            type: string
+            enum: [pix, credit_card, debit_card, cash, bank_transfer]
+        paymentType:
+          type: string
+          enum: [direct, eventingon]
+          default: eventingon
+
+    Advertisement:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        description:
+          type: string
+        status:
+          type: string
+          enum: [draft, published, active, paused, archived]
+        paymentType:
+          type: string
+          enum: [direct, eventingon]
+        minPrice:
+          type: number
+        rating:
+          type: number
+          format: float
+        reviewCount:
+          type: integer
+        ownerId:
+          type: string
+          format: uuid
+
+    CreateBudgetRequest:
+      type: object
+      required: [eventId, advertisementId]
+      properties:
+        eventId:
+          type: string
+          format: uuid
+        advertisementId:
+          type: string
+          format: uuid
+        message:
+          type: string
+          example: "Gostaria de saber disponibilidade para 80 pessoas"
+
+    Budget:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [pending, accepted, rejected]
+        eventId:
+          type: string
+          format: uuid
+        advertisementId:
+          type: string
+          format: uuid
+        createdAt:
+          type: string
+          format: date-time
+
+    Negotiation:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [pending, active, accepted, declined, cancelled, finalized]
+        finalPrice:
+          type: number
+        organizerId:
+          type: string
+          format: uuid
+        providerId:
+          type: string
+          format: uuid
+        eventId:
+          type: string
+          format: uuid
+        advertisementId:
+          type: string
+          format: uuid
+
+    CreatePaymentRequest:
+      type: object
+      required: [negotiationId, paymentMethod, amount]
+      properties:
+        negotiationId:
+          type: string
+          format: uuid
+        paymentMethod:
+          type: string
+          enum: [pix, credit_card, debit_card, cash, bank_transfer]
+        amount:
+          type: number
+          example: 3200.00
+        installments:
+          type: integer
+          minimum: 1
+          maximum: 12
+
+    Payment:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [pending, processing, paid, released, cancelled, refunded]
+        amount:
+          type: number
+        paymentMethod:
+          type: string
+        pixQrCode:
+          type: string
+        pixKey:
+          type: string
+        expiresAt:
+          type: string
+          format: date-time
+
+paths:
+  /bff/auth/register:
+    post:
+      tags: [Auth]
+      summary: Register new user
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '201':
+          description: User registered
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '409':
+          description: Email already in use
+        '422':
+          description: Validation error
+
+  /bff/auth/login:
+    post:
+      tags: [Auth]
+      summary: Login with email and password
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          description: Invalid credentials
+
+  /bff/auth/refresh:
+    post:
+      tags: [Auth]
+      summary: Refresh access token
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [refreshToken]
+              properties:
+                refreshToken:
+                  type: string
+      responses:
+        '200':
+          description: New tokens issued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          description: Invalid or expired refresh token
+
+  /bff/auth/me:
+    get:
+      tags: [Auth]
+      summary: Get current user profile
+      responses:
+        '200':
+          description: Current user
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/User'
+
+  /bff/events:
+    get:
+      tags: [Events]
+      summary: List events
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: Events list
+    post:
+      tags: [Events]
+      summary: Create event
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateEventRequest'
+      responses:
+        '201':
+          description: Event created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Event'
+
+  /bff/events/upcoming:
+    get:
+      tags: [Events]
+      summary: Upcoming public events
+      security: []
+      responses:
+        '200':
+          description: Upcoming events
+
+  /bff/events/my-events:
+    get:
+      tags: [Events]
+      summary: Authenticated user's events
+      responses:
+        '200':
+          description: My events
+
+  /bff/events/{id}:
+    get:
+      tags: [Events]
+      summary: Get event by ID
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Event details
+        '404':
+          description: Event not found
+    put:
+      tags: [Events]
+      summary: Update event
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateEventRequest'
+      responses:
+        '200':
+          description: Event updated
+    delete:
+      tags: [Events]
+      summary: Delete event
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Event deleted
+
+  /bff/events/{id}/publish:
+    post:
+      tags: [Events]
+      summary: Publish event
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Event published
+
+  /bff/events/{id}/cancel:
+    post:
+      tags: [Events]
+      summary: Cancel event
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Event cancelled
+
+  /bff/advertisements/public:
+    get:
+      tags: [Advertisements]
+      summary: Public provider listings
+      security: []
+      parameters:
+        - in: query
+          name: regionId
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: categoryId
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: page
+          schema:
+            type: integer
+        - in: query
+          name: limit
+          schema:
+            type: integer
+        - in: query
+          name: search
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Provider listings
+
+  /bff/advertisements/my-advertisements:
+    get:
+      tags: [Advertisements]
+      summary: My advertisements
+      responses:
+        '200':
+          description: My listings
+
+  /bff/advertisements:
+    get:
+      tags: [Advertisements]
+      summary: List all advertisements
+      responses:
+        '200':
+          description: Advertisements list
+    post:
+      tags: [Advertisements]
+      summary: Create advertisement
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateAdvertisementRequest'
+      responses:
+        '201':
+          description: Advertisement created
+
+  /bff/advertisements/{id}:
+    get:
+      tags: [Advertisements]
+      summary: Get advertisement
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Advertisement details
+    put:
+      tags: [Advertisements]
+      summary: Update advertisement
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateAdvertisementRequest'
+      responses:
+        '200':
+          description: Advertisement updated
+
+  /bff/advertisements/{id}/publish:
+    post:
+      tags: [Advertisements]
+      summary: Publish advertisement
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Published
+
+  /bff/advertisements/{id}/activate:
+    post:
+      tags: [Advertisements]
+      summary: Activate advertisement
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Activated
+
+  /bff/advertisements/rankings:
+    get:
+      tags: [Advertisements]
+      summary: Top-ranked advertisements
+      security: []
+      responses:
+        '200':
+          description: Rankings
+
+  /bff/catalog/{advertisementId}/items:
+    get:
+      tags: [Catalog]
+      summary: List catalog items
+      parameters:
+        - in: path
+          name: advertisementId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Items list
+    post:
+      tags: [Catalog]
+      summary: Add catalog item
+      parameters:
+        - in: path
+          name: advertisementId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CatalogItem'
+      responses:
+        '201':
+          description: Item added
+    put:
+      tags: [Catalog]
+      summary: Update catalog items
+      parameters:
+        - in: path
+          name: advertisementId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Items updated
+
+  /bff/budgets:
+    get:
+      tags: [Budgets]
+      summary: List budgets
+      responses:
+        '200':
+          description: Budgets list
+    post:
+      tags: [Budgets]
+      summary: Request budget from provider
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateBudgetRequest'
+      responses:
+        '201':
+          description: Budget request created
+
+  /bff/budgets/{id}/accept:
+    patch:
+      tags: [Budgets]
+      summary: Accept budget
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Budget accepted
+
+  /bff/budgets/{id}/reject:
+    patch:
+      tags: [Budgets]
+      summary: Reject budget
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Budget rejected
+
+  /bff/negotiations/my-negotiations:
+    get:
+      tags: [Negotiations]
+      summary: My negotiations
+      responses:
+        '200':
+          description: Negotiations list
+
+  /bff/negotiations/{id}/messages:
+    post:
+      tags: [Negotiations]
+      summary: Send message in negotiation
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                content:
+                  type: string
+      responses:
+        '201':
+          description: Message sent
+
+  /bff/negotiations/{id}/accept:
+    post:
+      tags: [Negotiations]
+      summary: Accept negotiation
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Accepted
+
+  /bff/negotiations/{id}/finalize-price:
+    patch:
+      tags: [Negotiations]
+      summary: Lock final price
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                finalPrice:
+                  type: number
+      responses:
+        '200':
+          description: Price locked
+
+  /bff/negotiations/{id}/generate-payment:
+    post:
+      tags: [Negotiations]
+      summary: Generate payment from negotiation
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '201':
+          description: Payment generated
+
+  /bff/payments:
+    get:
+      tags: [Payments]
+      summary: List payments
+      responses:
+        '200':
+          description: Payments list
+    post:
+      tags: [Payments]
+      summary: Create payment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePaymentRequest'
+      responses:
+        '201':
+          description: Payment created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Payment'
+
+  /bff/payments/my-payments:
+    get:
+      tags: [Payments]
+      summary: My payments
+      responses:
+        '200':
+          description: Payments list
+
+  /bff/payments/{id}/confirm:
+    post:
+      tags: [Payments]
+      summary: Confirm service delivery (releases escrow)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Delivery confirmed, escrow released
+
+  /bff/payments/{id}/refund:
+    post:
+      tags: [Payments]
+      summary: Request refund
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+      responses:
+        '200':
+          description: Refund requested
+
+  /bff/payouts/balance:
+    get:
+      tags: [Payments]
+      summary: Provider balance
+      responses:
+        '200':
+          description: Balance info
+
+  /bff/payouts:
+    post:
+      tags: [Payments]
+      summary: Request payout
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                amount:
+                  type: number
+      responses:
+        '201':
+          description: Payout requested
+
+  /bff/ratings:
+    post:
+      tags: [Ratings]
+      summary: Submit rating
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [negotiationId, score]
+              properties:
+                negotiationId:
+                  type: string
+                  format: uuid
+                score:
+                  type: integer
+                  minimum: 1
+                  maximum: 5
+                comment:
+                  type: string
+      responses:
+        '201':
+          description: Rating submitted
+
+  /bff/ratings/provider/{providerId}:
+    get:
+      tags: [Ratings]
+      summary: Get provider ratings
+      security: []
+      parameters:
+        - in: path
+          name: providerId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Provider ratings
+
+  /bff/notifications:
+    get:
+      tags: [Notifications]
+      summary: List notifications
+      responses:
+        '200':
+          description: Notifications
+
+  /bff/notifications/unread:
+    get:
+      tags: [Notifications]
+      summary: Unread notifications count
+      responses:
+        '200':
+          description: Unread count
+
+  /bff/notifications/read-all:
+    post:
+      tags: [Notifications]
+      summary: Mark all as read
+      responses:
+        '200':
+          description: All marked read
+
+  /bff/media/upload:
+    post:
+      tags: [Media]
+      summary: Upload file
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                entityType:
+                  type: string
+                entityId:
+                  type: string
+      responses:
+        '201':
+          description: File uploaded
+
+  /bff/discovery/nearby:
+    get:
+      tags: [Discovery]
+      summary: Nearby providers
+      parameters:
+        - in: query
+          name: lat
+          schema:
+            type: number
+        - in: query
+          name: lng
+          schema:
+            type: number
+        - in: query
+          name: radiusKm
+          schema:
+            type: number
+      responses:
+        '200':
+          description: Nearby providers
+
+  /bff/categories:
+    get:
+      tags: [Reference]
+      summary: List categories
+      responses:
+        '200':
+          description: Categories
+
+  /bff/regions/active:
+    get:
+      tags: [Reference]
+      summary: Active regions
+      security: []
+      responses:
+        '200':
+          description: Active regions
+
+  /bff/event-types/active:
+    get:
+      tags: [Reference]
+      summary: Active event types
+      security: []
+      responses:
+        '200':
+          description: Event types
+
+  /bff/addresses/cep/{cep}:
+    get:
+      tags: [Reference]
+      summary: Lookup postal code (CEP)
+      parameters:
+        - in: path
+          name: cep
+          required: true
+          schema:
+            type: string
+            example: "01310100"
+      responses:
+        '200':
+          description: Address from CEP
+
+  /bff/public/stats:
+    get:
+      tags: [Public]
+      summary: Platform statistics
+      security: []
+      responses:
+        '200':
+          description: Stats
+
+  /bff/public/categories:
+    get:
+      tags: [Public]
+      summary: Public categories list
+      security: []
+      responses:
+        '200':
+          description: Categories
+
+  /bff/public/regions:
+    get:
+      tags: [Public]
+      summary: Public regions list
+      security: []
+      responses:
+        '200':
+          description: Regions
+
+  /bff/waitlist:
+    post:
+      tags: [Public]
+      summary: Join waitlist
+      security: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email:
+                  type: string
+                  format: email
+                name:
+                  type: string
+      responses:
+        '201':
+          description: Added to waitlist
+
+  /health:
+    get:
+      tags: [Health]
+      summary: Health check
+      security: []
+      responses:
+        '200':
+          description: Service healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+                  timestamp:
+                    type: string
+                    format: date-time
