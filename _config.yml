@@ -1,0 +1,9 @@
+remote_theme: just-the-docs/just-the-docs
+title: Eventoando API Docs
+description: Documentação pública da API Eventoando — marketplace de eventos no Brasil
+baseurl: ""
+url: "https://docs.eventoando.com.br"
+lang: pt-BR
+
+search_enabled: true
+footer_content: "© 2026 Suntinus. MIT License."
