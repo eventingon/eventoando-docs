@@ -671,6 +671,10 @@ paths:
     get:
       tags: [Advertisements]
       summary: Get advertisement
+      description: >
+        Returns ACTIVE listings to anyone. Non-ACTIVE listings (draft, pending, paused,
+        rejected, archived) are returned only to the owner or an admin; otherwise 404.
+        Provider contact is owner-resolved into ownerName/ownerEmail/ownerPhone.
       parameters:
         - in: path
           name: id
@@ -680,6 +684,8 @@ paths:
       responses:
         '200':
           description: Advertisement details
+        '404':
+          description: Not found, or non-ACTIVE listing requested by a non-owner
     put:
       tags: [Advertisements]
       summary: Update advertisement

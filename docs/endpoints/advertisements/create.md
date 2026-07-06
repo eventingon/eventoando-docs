@@ -84,3 +84,17 @@ draft → published → active
 ```
 
 Use `POST /bff/advertisements/:id/publish` to publish, then `POST /:id/activate` to activate.
+
+## Detail visibility — `GET /bff/advertisements/:id`
+
+- **ACTIVE** listings are public (token optional).
+- **Non-ACTIVE** listings (draft, pending, paused, rejected, archived) are returned **only to the
+  owner or an admin**; anyone else gets **404**. This prevents incomplete drafts from surfacing as
+  public listings.
+- Public listings (`/public`, `/explore-data`, `/recent`) always filter `status = ACTIVE`.
+
+## Contact fields (owner-resolved)
+
+Provider name/email/phone are **not stored on the advertisement** — they live on the owner `user`.
+The detail endpoint resolves them server-side and returns `ownerName` / `ownerEmail` / `ownerPhone`.
+A listing whose owner has no name/email will show "Não informado" in the app.

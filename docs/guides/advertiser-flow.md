@@ -79,6 +79,12 @@ curl -X POST https://www.eventoando.com.br/api/v1/bff/advertisements/<id>/activa
   -H "Authorization: Bearer <accessToken>"
 ```
 
+> **Until published, the listing is `draft` and only visible to you (the owner) and admins.**
+> `GET /bff/advertisements/:id` returns a non-ACTIVE listing only to its owner or an admin —
+> everyone else gets `404`. Public listings (`/public`, `/explore-data`, `/recent`) only show
+> `status = active`. Provider name/email/phone shown on the detail come from your **user profile**
+> (resolved as `ownerName`/`ownerEmail`/`ownerPhone`), not from the listing itself — keep them filled.
+
 ## Step 4 — Receive and respond to budget requests
 
 Check incoming budget requests:
