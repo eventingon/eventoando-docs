@@ -4,6 +4,31 @@ Eventoando uses **JWT Bearer tokens** for authentication. Tokens are short-lived
 
 ---
 
+## App entry (visual flow)
+
+The Flutter entry screen keeps **sign in** and **create account** as distinct modes. API contracts below are unchanged.
+
+```
+Landing / marketplace (guest)
+  → Entrar  → modo "Já tenho conta"  → email + senha
+  → Criar conta → modo "Criar conta" → nome, email, senha, termos, OTP
+  → Explorar sem cadastro → catálogo público (eventos, regiões, fornecedores)
+```
+
+Order of methods on the entry screen:
+
+1. **Email + password** (always visible)
+2. **Password recovery** (`Esqueceu sua senha?` → `/forgot-password`)
+3. **OTP** during signup verification (6-digit email code)
+4. **OAuth** (Google / Facebook) only when `FeatureFlags.enableSocialLogin` is enabled
+5. **Theme** (Claro / Escuro / Sistema) before login; preference is stored locally and `Sistema` follows `prefers-color-scheme`
+
+Guests may browse public catalog surfaces. Authentication is requested only to create an event, save a provider, request a quote, or send a message. Private endpoints stay private. JWT, refresh token and route guards are unchanged.
+
+The generated side-panel image is decorative only (no text inside the asset). It is omitted on narrow, short or high-contrast layouts.
+
+---
+
 ## Endpoints
 
 | Method | Path | Description | Auth required |
